@@ -4,9 +4,10 @@ Scripts for managing Linode infrastructure.
 
 ## Prerequisites
 
-1. Linode CLI token in `~/.linode_wavey`
+1. Linode CLI token in `~/.linode_wavey` or repo-local `.linode-token`
 2. SSH key (`~/.ssh/id_ed25519.pub` or `~/.ssh/id_rsa.pub`)
-3. Object Storage secret key (set `OBJ_SECRET_KEY` env var)
+3. OIDC env at `io/.env`
+4. TLS env at `tls-certs/.env`
 
 ## IDP Server
 
@@ -15,7 +16,6 @@ Single Sign-On server using hyper-idp with Auth0.
 ### Create
 
 ```bash
-export OBJ_SECRET_KEY="<object-storage-secret>"
 ./idp.sh create
 ```
 
@@ -38,16 +38,16 @@ After creation, add callback URL to Auth0:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Linode Object Storage (gb-lon-1)                   │
-│  Bucket: wavey-creds                                │
-│  ├── tls/certs.env                                  │
-│  └── oidc/config.env                                │
+│  Deploy Host                                         │
+│  - repo-local Linode token                          │
+│  - io/.env                                          │
+│  - tls-certs/.env                                   │
 └─────────────────────────────────────────────────────┘
                          │
-                         ▼ (fetch on setup)
+                         ▼ (scp on setup)
 ┌─────────────────────────────────────────────────────┐
-│  Linode Nanode (gb-lon)                             │
-│  - Rocky Linux 9                                    │
+│  Linode Dedicated 4GB/2CPU (gb-lon)                │
+│  - Arch Linux                                       │
 │  - hyper-idp binary                                 │
 │  - Let's Encrypt wildcard cert (*.wavey.io)         │
 │  - Auto-renewal with deploy hook                    │
@@ -67,17 +67,6 @@ After creation, add callback URL to Auth0:
 | `/users` | Active user IDs (for allow list) |
 | `/validate?session_id=xxx` | Validate session |
 | `/logout` | End session |
-
-### Object Storage
-
-Bucket: `wavey-creds` in `gb-lon-1`
-
-| Path | Contents |
-|------|----------|
-| `oidc/config.env` | OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_AUDIENCE |
-| `tls/certs.env` | Base64 encoded certs |
-| `tls/fullchain.pem` | TLS certificate chain |
-| `tls/privkey.pem` | TLS private key |
 
 ### Cert Renewal
 
