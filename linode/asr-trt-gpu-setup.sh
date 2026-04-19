@@ -30,6 +30,7 @@ arch_pkgs=(
   curl
   git
   jq
+  linux-firmware-nvidia
   linux-headers
   nvidia-open-dkms
   nvidia-utils
@@ -40,6 +41,14 @@ arch_pkgs=(
 )
 
 export DEBIAN_FRONTEND=noninteractive
+
+pacman-key --init
+pacman-key --populate archlinux
+pacman -Sy --noconfirm archlinux-keyring ca-certificates-mozilla
+
+if pacman -Q linux-firmware >/dev/null 2>&1; then
+  pacman -Rdd --noconfirm linux-firmware
+fi
 
 pacman -Syu --noconfirm --needed "${arch_pkgs[@]}"
 
