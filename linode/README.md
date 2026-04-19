@@ -73,3 +73,74 @@ After creation, add callback URL to Auth0:
 Certificates auto-renew via certbot timer. The deploy hook at
 `/etc/letsencrypt/renewal-hooks/deploy/hyper-idp.sh` updates
 the service config and restarts it.
+
+## ASR TRT GPU Server
+
+Dedicated external Arch GPU node for TensorRT bring-up without Kubernetes.
+
+### Recommended Type
+
+Current guidance for full Cohere TRT engine build:
+
+- `g2-gpu-rtx4000a1-m` for a single RTX4000 Ada with `32GB` RAM
+- avoid `g2-gpu-rtx4000a1-s` for full first-build bring-up; it can OOM during engine compilation
+
+Type data comes from the public Linode types API:
+
+```bash
+curl -s https://api.linode.com/v4/linode/types | jq '.data[] | select(.class == "gpu") | {id, label, memory, price}'
+```
+
+### Create
+
+```bash
+./asr-trt-gpu.sh create
+```
+
+Useful overrides:
+
+```bash
+REGION=de-fra-2 \
+LINODE_TYPE=g2-gpu-rtx4000a1-m \
+LABEL=asr-trt-gpu-01 \
+./asr-trt-gpu.sh create
+```
+
+To manage a DNS entry, also set:
+
+```bash
+DOMAIN_ID=<linode-domain-id> \
+SUBDOMAIN=cohere-trt-test \
+DOMAIN_NAME=wavey.ai \
+./asr-trt-gpu.sh create
+```
+
+### Runtime Setup
+
+`asr-trt-gpu-setup.sh` prepares the base runtime layout used by the current TRT test host:
+
+- Arch packages: `nvidia-open-dkms`, `nvidia-utils`, `cuda`, `linux-headers`
+- side-by-side CUDA 12.8 runtime at `/opt/cuda-12.8-runtime`
+- ONNX Runtime GPU at `/opt/onnxruntime-trt`
+- TensorRT at `/opt/tensorrt`
+- optional temporary swapfile `/swapfile-trt`
+
+By default, ONNX Runtime is pulled from the public GitHub release:
+
+```bash
+ONNXRUNTIME_URL=https://github.com/microsoft/onnxruntime/releases/download/v1.24.4/onnxruntime-linux-x64-gpu-1.24.4.tgz
+```
+
+TensorRT should be provided explicitly:
+
+```bash
+TENSORRT_URL=<official TensorRT tarball URL> ./asr-trt-gpu.sh create
+```
+
+### Capture a Base Image
+
+After the node is in the state you want to reuse:
+
+```bash
+IMAGE_LABEL=arch-gpu-trt-base-20260419 ./asr-trt-gpu.sh capture-image
+```
