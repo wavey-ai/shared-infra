@@ -139,7 +139,21 @@ TENSORRT_URL=<official TensorRT tarball URL> ./asr-trt-gpu.sh create
 
 ### Capture a Base Image
 
-After the node is in the state you want to reuse:
+Before capture, strip the node down to the reusable GPU runtime:
+
+```bash
+./asr-trt-gpu.sh finalize-image
+```
+
+This removes host-specific app state, models, caches, build trees, and source tarballs, then trims TensorRT down to the shared libraries needed by the current ORT+TRT runtime.
+
+Important:
+
+- Linode custom images are sized by used disk, not provisioned disk.
+- The default custom-image cap is still small enough that a full CUDA 12.8 + TensorRT + ORT stack may exceed it even after cleanup.
+- If `finalize-image` reports used disk above about `5.4 GiB`, either request a higher custom-image size limit from Linode or use a two-stage bootstrap where the node image contains only the OS/driver baseline and the TRT user-space runtime is staged after boot.
+
+Then capture:
 
 ```bash
 IMAGE_LABEL=arch-gpu-trt-base-20260419 ./asr-trt-gpu.sh capture-image

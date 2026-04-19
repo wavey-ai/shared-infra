@@ -33,7 +33,7 @@ LINODE_CLI_TOKEN="$(head -n 1 "$LINODE_TOKEN_FILE")"
 
 usage() {
     cat <<EOF
-Usage: $0 [create|destroy|status|ssh|logs|capture-image]
+Usage: $0 [create|destroy|status|ssh|logs|finalize-image|capture-image]
 
 Commands:
   create         Create a dedicated Arch GPU node and run base TRT setup
@@ -41,6 +41,7 @@ Commands:
   status         Show node status
   ssh            SSH into the node
   logs           Tail asr-api test service logs
+  finalize-image Remove app/build artifacts and trim the node for image capture
   capture-image  Create a reusable custom image from the current node
 
 Important env overrides:
@@ -239,6 +240,16 @@ logs() {
     ssh root@"$ip" "journalctl -u asr-api-cohere-test.service -f"
 }
 
+finalize_image() {
+    local ip
+    ip="$(get_linode_ip)"
+    if [ -z "$ip" ]; then
+        echo "Server not found"
+        exit 1
+    fi
+    "$SCRIPT_DIR/asr-trt-gpu-finalize.sh" "$ip"
+}
+
 capture_image() {
     local linode_id
     local disk_id
@@ -270,6 +281,7 @@ case "${1:-}" in
     status)         status ;;
     ssh)            do_ssh ;;
     logs)           logs ;;
+    finalize-image) finalize_image ;;
     capture-image)  capture_image ;;
     *)              usage ;;
 esac
