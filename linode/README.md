@@ -83,7 +83,7 @@ Dedicated external Arch GPU node for TensorRT bring-up without Kubernetes.
 Current guidance for full Cohere TRT engine build:
 
 - `g2-gpu-rtx4000a1-m` for a single RTX4000 Ada with `32GB` RAM
-- avoid `g2-gpu-rtx4000a1-s` for full first-build bring-up; it can OOM during engine compilation
+- avoid `g2-gpu-rtx4000a1-s` for full first-build bring-up. It can OOM during engine compilation
 
 Type data comes from the public Linode types API:
 
@@ -145,13 +145,18 @@ Before capture, strip the node down to the reusable GPU runtime:
 ./asr-trt-gpu.sh finalize-image
 ```
 
-This removes host-specific app state, models, caches, build trees, and source tarballs, then trims TensorRT down to the shared libraries needed by the current ORT+TRT runtime.
+This removes host-specific app state, models, caches, build trees, and source
+archives. It then keeps only the TensorRT shared libraries that the current
+ORT+TRT runtime needs.
 
 Important:
 
 - Linode custom images are sized by used disk, not provisioned disk.
 - The default custom-image cap is still small enough that a full CUDA 12.8 + TensorRT + ORT stack may exceed it even after cleanup.
-- If `finalize-image` reports used disk above about `5.4 GiB`, either request a higher custom-image size limit from Linode or use a two-stage bootstrap where the node image contains only the OS/driver baseline and the TRT user-space runtime is staged after boot.
+- If `finalize-image` reports more than approximately `5.4 GiB` of used disk,
+  request a higher custom-image limit from Linode. Alternatively, use a
+  two-stage bootstrap. Put only the OS and driver baseline in the node image,
+  then stage the TRT user-space runtime after startup.
 
 Then capture:
 
